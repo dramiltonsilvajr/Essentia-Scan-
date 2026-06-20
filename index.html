@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Essentia Scan™ — Análise nutricional por IA com supervisão médica. Instituto Neuro Essentia.">
+<title>Essentia Scan™ — Instituto Neuro Essentia</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+  :root {
+    --navy:#0B1929;--navy2:#112236;--navy3:#1A3350;
+    --gold:#C9973A;--gold2:#E2B96B;--gold3:#F5EDD6;
+    --white:#FFFFFF;--text:#E8E8E8;--text2:#A0A8B4;
+    --red:#E05555;--green:#4CAF7D;--orange:#F59E0B;
+    --radius:12px;--shadow:0 4px 24px rgba(0,0,0,0.3);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'Inter',sans-serif;background:var(--navy);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* ── CONSENT MODAL ── */
+  .consent-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;}
+  .consent-box{background:var(--navy2);border:1px solid rgba(201,151,58,0.35);border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;padding:28px 24px;}
+  .consent-logo{text-align:center;margin-bottom:20px;}
+  .consent-logo h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold2);}
+  .consent-logo p{font-size:0.75rem;color:var(--text2);margin-top:4px;}
+  .consent-title{font-size:1rem;font-weight:600;color:var(--white);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(201,151,58,0.2);}
+  .consent-text{font-size:0.82rem;color:var(--text);line-height:1.7;margin-bottom:14px;}
+  .consent-text strong{color:var(--gold2);}
+  .consent-alert{background:rgba(224,85,85,0.12);border:1px solid rgba(224,85,85,0.3);border-radius:8px;padding:12px;font-size:0.82rem;color:#FCA5A5;margin-bottom:16px;line-height:1.6;}
+  .consent-check{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;}
+  .consent-check input{width:18px;height:18px;margin-top:2px;flex-shrink:0;accent-color:var(--gold);cursor:pointer;}
+  .consent-check span{font-size:0.82rem;color:var(--text);line-height:1.5;}
+  .consent-check a{color:var(--gold2);text-decoration:underline;}
+  .btn-consent{width:100%;background:linear-gradient(135deg,var(--gold),var(--gold2));color:var(--navy);border:none;border-radius:10px;padding:14px;font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;transition:all 0.2s;}
+  .btn-consent:disabled{opacity:0.4;cursor:not-allowed;}
+  .btn-consent:not(:disabled):hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,151,58,0.3);}
+  .consent-date{font-size:0.7rem;color:var(--text2);text-align:center;margin-top:12px;}
+
+  /* ── TOPBAR ── */
+  .topbar{background:var(--navy2);border-bottom:1px solid rgba(201,151,58,0.2);padding:12px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+  .topbar-logo{display:flex;align-items:center;gap:10px;}
+  .logo-svg{width:36px;height:36px;}
+  .topbar-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;font-weight:600;color:var(--gold2);line-height:1.1;}
+  .topbar-title small{display:block;font-family:'Inter',sans-serif;font-size:0.6rem;font-weight:400;color:var(--text2);text-transform:uppercase;letter-spacing:1px;}
+  .topbar-right{display:flex;align-items:center;gap:10px;}
+  .trial-badge{background:rgba(201,151,58,0.15);border:1px solid rgba(201,151,58,0.3);color:var(--gold2);font-size:0.7rem;padding:4px 10px;border-radius:20px;font-weight:500;}
+  .btn-logout{background:none;border:1px solid rgba(255,255,255,0.15);color:var(--text2);font-size:0.75rem;padding:6px 12px;border-radius:8px;cursor:pointer;transition:all 0.2s;}
+  .btn-logout:hover{border-color:var(--gold);color:var(--gold);}
+
+  /* ── TABS ── */
+  .tabs{background:var(--navy2);display:flex;border-bottom:1px solid rgba(201,151,58,0.15);overflow-x:auto;}
+  .tab{flex:1;min-width:60px;padding:14px 6px;text-align:center;cursor:pointer;font-size:0.68rem;font-weight:500;color:var(--text2);border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+  .tab.active{color:var(--gold2);border-bottom-color:var(--gold);}
+  .tab-icon{display:block;font-size:1.2rem;margin-bottom:3px;}
+
+  /* ── SCREENS ── */
+  .screen{display:none;padding:20px;max-width:600px;margin:0 auto;}
+  .screen.active{display:block;}
+
+  /* ── AUTH ── */
+  .auth-wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 20px;background:linear-gradient(160deg,var(--navy) 0%,var(--navy2) 100%);}
+  .auth-logo{text-align:center;margin-bottom:32px;}
+  .auth-logo-img{width:80px;height:80px;margin:0 auto 12px;}
+  .auth-logo h1{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;color:var(--gold2);}
+  .auth-logo p{font-size:0.8rem;color:var(--text2);margin-top:4px;text-transform:uppercase;letter-spacing:2px;}
+  .auth-card{background:var(--navy2);border:1px solid rgba(201,151,58,0.2);border-radius:16px;padding:28px 24px;width:100%;max-width:380px;box-shadow:var(--shadow);}
+  .auth-tabs{display:flex;gap:8px;margin-bottom:24px;}
+  .auth-tab{flex:1;padding:10px;text-align:center;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:500;border:1px solid rgba(255,255,255,0.1);color:var(--text2);transition:all 0.2s;background:none;}
+  .auth-tab.active{background:rgba(201,151,58,0.15);border-color:var(--gold);color:var(--gold2);}
+  .form-group{margin-bottom:16px;}
+  .form-group label{display:block;font-size:0.78rem;color:var(--text2);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;}
+  .form-group input,.form-group select{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:12px 14px;color:var(--white);font-size:0.9rem;font-family:'Inter',sans-serif;transition:border-color 0.2s;-webkit-appearance:none;}
+  .form-group input:focus,.form-group select:focus{outline:none;border-color:var(--gold);}
+  .form-group select option{background:var(--navy2);}
+  .btn-primary{width:100%;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:var(--navy);border:none;border-radius:10px;padding:14px;font-size:0.9rem;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(201,151,58,0.3);}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+  .btn-secondary{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:var(--text);border-radius:10px;padding:12px;font-size:0.85rem;cursor:pointer;transition:all 0.2s;font-family:'Inter',sans-serif;width:100%;}
+  .btn-secondary:hover{border-color:var(--gold);color:var(--gold);}
+  .auth-footer{text-align:center;margin-top:20px;font-size:0.75rem;color:var(--text2);}
+  .auth-footer a{color:var(--gold2);text-decoration:none;}
+
+  /* ── SCAN ── */
+  .scan-hero{background:linear-gradient(135deg,var(--navy2) 0%,var(--navy3) 100%);border:1px solid rgba(201,151,58,0.2);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px;}
+  .scan-icon{font-size:3rem;margin-bottom:12px;}
+  .scan-hero h2{font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--gold2);margin-bottom:8px;}
+  .scan-hero p{font-size:0.85rem;color:var(--text2);line-height:1.5;}
+  .upload-area{border:2px dashed rgba(201,151,58,0.3);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all 0.2s;margin-bottom:16px;background:rgba(201,151,58,0.03);}
+  .upload-area:hover{border-color:var(--gold);background:rgba(201,151,58,0.07);}
+  .upload-area input{display:none;}
+  .upload-preview{width:100%;max-height:240px;object-fit:cover;border-radius:10px;margin-bottom:12px;}
+  .upload-placeholder{color:var(--text2);font-size:0.85rem;}
+  .upload-placeholder span{font-size:2.5rem;display:block;margin-bottom:8px;}
+
+  /* ── RESULT ── */
+  .result-card{background:var(--navy2);border:1px solid rgba(201,151,58,0.2);border-radius:16px;padding:20px;margin-bottom:16px;}
+  .result-dish{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold2);margin-bottom:4px;}
+  .result-portion{font-size:0.8rem;color:var(--text2);margin-bottom:16px;}
+  .macros-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;}
+  .macro-item{background:rgba(255,255,255,0.04);border-radius:10px;padding:12px;text-align:center;}
+  .macro-value{font-size:1.4rem;font-weight:600;color:var(--white);}
+  .macro-value.calories{color:var(--gold2);font-size:1.8rem;}
+  .macro-label{font-size:0.7rem;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+  .macro-range{font-size:0.68rem;color:var(--text2);}
+  .quality-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:0.75rem;font-weight:600;margin-bottom:12px;}
+  .quality-Excelente{background:rgba(76,175,125,0.2);color:#4CAF7D;border:1px solid rgba(76,175,125,0.3);}
+  .quality-Boa{background:rgba(76,175,125,0.15);color:#81C784;border:1px solid rgba(76,175,125,0.2);}
+  .quality-Regular{background:rgba(245,158,11,0.15);color:var(--orange);border:1px solid rgba(245,158,11,0.3);}
+  .quality-Ruim{background:rgba(224,85,85,0.15);color:var(--red);border:1px solid rgba(224,85,85,0.3);}
+  .result-summary{font-size:0.85rem;color:var(--text);line-height:1.6;padding:12px;background:rgba(255,255,255,0.04);border-radius:8px;margin-bottom:10px;}
+  .result-neuro{font-size:0.82rem;color:var(--gold3);line-height:1.6;padding:12px;background:rgba(201,151,58,0.08);border:1px solid rgba(201,151,58,0.15);border-radius:8px;}
+  .result-neuro strong{color:var(--gold2);}
+  .disclaimer-mini{font-size:0.72rem;color:var(--text2);text-align:center;margin-top:8px;padding:8px;border-top:1px solid rgba(255,255,255,0.06);}
+
+  /* ── TODAY ── */
+  .today-card{background:var(--navy2);border:1px solid rgba(201,151,58,0.15);border-radius:14px;padding:16px;margin-bottom:16px;}
+  .today-title{font-size:0.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:12px;font-weight:600;}
+  .progress-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .progress-label{font-size:0.78rem;color:var(--text2);width:80px;flex-shrink:0;}
+  .progress-bar-wrap{flex:1;background:rgba(255,255,255,0.08);border-radius:4px;height:6px;overflow:hidden;}
+  .progress-bar{height:100%;border-radius:4px;transition:width 0.5s ease;}
+  .progress-bar.cal{background:linear-gradient(90deg,var(--gold),var(--gold2));}
+  .progress-bar.prot{background:linear-gradient(90deg,#60A5FA,#93C5FD);}
+  .progress-bar.carb{background:linear-gradient(90deg,#F97316,#FBB043);}
+  .progress-bar.fat{background:linear-gradient(90deg,#A78BFA,#C4B5FD);}
+  .progress-val{font-size:0.75rem;color:var(--white);width:60px;text-align:right;flex-shrink:0;}
+
+  /* ── PROFILE ── */
+  .section-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--gold2);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(201,151,58,0.2);}
+  .profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px;}
+  .profile-grid .full{grid-column:1/-1;}
+  .conditions-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+  .condition-btn{padding:10px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.04);color:var(--text2);font-size:0.78rem;cursor:pointer;text-align:left;transition:all 0.2s;font-family:'Inter',sans-serif;}
+  .condition-btn.selected{border-color:var(--gold);background:rgba(201,151,58,0.12);color:var(--gold2);}
+
+  /* ── CV SCORE ── */
+  .cv-score-card{background:var(--navy2);border:1px solid rgba(201,151,58,0.2);border-radius:16px;padding:20px;text-align:center;margin-bottom:20px;}
+  .cv-score-number{font-family:'Cormorant Garamond',serif;font-size:4rem;font-weight:700;line-height:1;margin-bottom:4px;}
+  .cv-score-label{font-size:0.85rem;color:var(--text2);margin-bottom:12px;}
+  .cv-risk-badge{display:inline-block;padding:6px 20px;border-radius:20px;font-size:0.85rem;font-weight:600;margin-bottom:16px;}
+  .metrics-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px;}
+  .metric-card{background:var(--navy2);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;text-align:center;}
+  .metric-value{font-size:1.5rem;font-weight:600;color:var(--gold2);}
+  .metric-label{font-size:0.7rem;color:var(--text2);margin-top:2px;text-transform:uppercase;letter-spacing:0.5px;}
+  .metric-sub{font-size:0.7rem;color:var(--text2);margin-top:4px;}
+
+  /* ── HISTORY ── */
+  .history-item{background:var(--navy2);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;}
+  .history-emoji{font-size:1.8rem;flex-shrink:0;}
+  .history-info{flex:1;min-width:0;}
+  .history-name{font-size:0.88rem;font-weight:500;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .history-meta{font-size:0.75rem;color:var(--text2);margin-top:2px;}
+  .history-cals{font-size:1rem;font-weight:600;color:var(--gold2);flex-shrink:0;}
+
+  /* ── CLINICA ── */
+  .doctor-card{background:linear-gradient(135deg,var(--navy2) 0%,var(--navy3) 100%);border:1px solid rgba(201,151,58,0.3);border-radius:16px;padding:24px;text-align:center;margin-bottom:20px;}
+  .doctor-avatar{width:70px;height:70px;border-radius:50%;background:rgba(201,151,58,0.15);border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 14px;}
+  .doctor-name{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold2);margin-bottom:4px;}
+  .doctor-crm{font-size:0.78rem;color:var(--text2);margin-bottom:12px;}
+  .doctor-specialty{display:inline-block;background:rgba(201,151,58,0.12);border:1px solid rgba(201,151,58,0.25);color:var(--gold2);font-size:0.75rem;padding:4px 12px;border-radius:20px;margin:2px;}
+  .about-text{font-size:0.85rem;color:var(--text);line-height:1.7;margin-bottom:16px;}
+  .info-block{background:var(--navy2);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:16px;margin-bottom:12px;}
+  .info-block h4{font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:8px;}
+  .info-block p{font-size:0.83rem;color:var(--text);line-height:1.7;}
+  .info-block a{color:var(--gold2);text-decoration:none;}
+
+  /* ── LEGAL PAGES ── */
+  .legal-wrap{max-width:600px;margin:0 auto;padding:24px 20px;}
+  .legal-wrap h1{font-family:'Cormorant Garamond',serif;font-size:1.6rem;color:var(--gold2);margin-bottom:8px;}
+  .legal-wrap .updated{font-size:0.75rem;color:var(--text2);margin-bottom:24px;}
+  .legal-wrap h2{font-size:0.9rem;font-weight:600;color:var(--gold2);margin:20px 0 8px;text-transform:uppercase;letter-spacing:0.5px;}
+  .legal-wrap p{font-size:0.83rem;color:var(--text);line-height:1.8;margin-bottom:10px;}
+  .legal-wrap ul{margin:0 0 10px 20px;}
+  .legal-wrap ul li{font-size:0.83rem;color:var(--text);line-height:1.8;}
+  .legal-back{display:inline-block;color:var(--gold2);font-size:0.82rem;margin-bottom:20px;cursor:pointer;text-decoration:none;}
+
+  /* ── SUBSCRIBE WALL ── */
+  .subscribe-wall{background:var(--navy2);border:1px solid rgba(201,151,58,0.3);border-radius:16px;padding:28px 20px;text-align:center;margin:20px 0;}
+  .subscribe-wall h3{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--gold2);margin-bottom:8px;}
+  .subscribe-wall p{font-size:0.85rem;color:var(--text2);margin-bottom:20px;line-height:1.5;}
+  .price-tag{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--gold2);margin-bottom:4px;}
+  .price-sub{font-size:0.75rem;color:var(--text2);margin-bottom:20px;}
+  .btn-subscribe{display:block;width:100%;background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 100%);color:var(--navy);border:none;border-radius:10px;padding:16px;font-size:1rem;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;margin-top:12px;transition:all 0.2s;font-family:'Inter',sans-serif;}
+  .btn-subscribe:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,151,58,0.35);}
+
+  /* ── UTILS ── */
+  .alert{padding:12px 14px;border-radius:8px;font-size:0.83rem;margin-bottom:14px;line-height:1.4;}
+  .alert-error{background:rgba(224,85,85,0.12);border:1px solid rgba(224,85,85,0.3);color:#FCA5A5;}
+  .alert-success{background:rgba(76,175,125,0.12);border:1px solid rgba(76,175,125,0.3);color:#86EFAC;}
+  .alert-info{background:rgba(201,151,58,0.1);border:1px solid rgba(201,151,58,0.25);color:var(--gold3);}
+  .loading{text-align:center;padding:40px 20px;color:var(--text2);font-size:0.85rem;}
+  .spinner{width:36px;height:36px;border:3px solid rgba(201,151,58,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 12px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .divider{height:1px;background:rgba(255,255,255,0.06);margin:20px 0;}
+  .hidden{display:none!important;}
+  .footer-brand{text-align:center;padding:24px 20px;border-top:1px solid rgba(255,255,255,0.06);font-size:0.72rem;color:var(--text2);line-height:1.8;}
+  .footer-brand a{color:var(--gold2);text-decoration:none;}
+
+  /* LOGO SVG inline */
+  .logo-svg-inline{display:block;}
+</style>
+</head>
+<body>
+
+<!-- ══════════ CONSENT MODAL ══════════ -->
+<div id="consentOverlay" class="consent-overlay hidden">
+  <div class="consent-box">
+    <div class="consent-logo">
+      <svg width="60" height="60" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="margin:0 auto 10px;display:block;">
+        <ellipse cx="50" cy="62" rx="38" ry="10" fill="none" stroke="#C9973A" stroke-width="3"/>
+        <path d="M50 15 C30 15 18 30 20 48 C22 60 30 68 42 72 C46 73 50 74 50 74 C50 74 54 73 58 72 C70 68 78 60 80 48 C82 30 70 15 50 15Z" fill="#C9973A" opacity="0.9"/>
+        <circle cx="44" cy="38" r="3" fill="#0B1929"/><circle cx="38" cy="46" r="2" fill="#0B1929"/>
+        <circle cx="52" cy="44" r="2.5" fill="#0B1929"/><circle cx="46" cy="54" r="2" fill="#0B1929"/>
+        <circle cx="58" cy="38" r="2" fill="#0B1929"/>
+        <line x1="44" y1="38" x2="38" y2="46" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="44" y1="38" x2="52" y2="44" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="52" y1="44" x2="46" y2="54" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="52" y1="44" x2="58" y2="38" stroke="#0B1929" stroke-width="1.2"/>
+      </svg>
+      <h2>Essentia Scan™</h2>
+      <p>Instituto Neuro Essentia</p>
+    </div>
+
+    <div class="consent-title">⚠️ Termos de Uso e Aviso Médico</div>
+
+    <div class="consent-alert">
+      <strong>IMPORTANTE:</strong> O Essentia Scan™ é uma ferramenta de apoio informativo baseada em Inteligência Artificial. <strong>Não substitui consulta médica, diagnóstico clínico ou acompanhamento nutricional presencial.</strong> As informações geradas têm caráter educativo e orientativo apenas.
+    </div>
+
+    <div class="consent-text">
+      Ao utilizar este aplicativo, você declara estar ciente de que:
+    </div>
+
+    <div class="consent-text">
+      • A análise calórica e de macronutrientes é uma <strong>estimativa por IA</strong>, sujeita a variações de até 20% em relação ao valor real.<br>
+      • O score de risco cardiovascular é apenas um <strong>indicador educativo</strong>, não um diagnóstico médico.<br>
+      • Pessoas com doenças crônicas, gestantes, idosos e crianças devem sempre consultar um médico antes de adotar mudanças alimentares.<br>
+      • Em caso de emergência médica, ligue <strong>192 (SAMU)</strong> ou <strong>193 (Bombeiros)</strong> imediatamente.
+    </div>
+
+    <label class="consent-check">
+      <input type="checkbox" id="check1" onchange="checkConsent()">
+      <span>Li e compreendi que este app <strong>não substitui avaliação médica</strong> e que as análises são estimativas educativas.</span>
+    </label>
+
+    <label class="consent-check">
+      <input type="checkbox" id="check2" onchange="checkConsent()">
+      <span>Aceito os <a href="#" onclick="showLegal('termos');return false;">Termos de Uso</a> e a <a href="#" onclick="showLegal('privacidade');return false;">Política de Privacidade</a> da Neuro Essentia Centro de Saúde Integral Ltda (CNPJ 44.038.190/0001-01).</span>
+    </label>
+
+    <label class="consent-check">
+      <input type="checkbox" id="check3" onchange="checkConsent()">
+      <span>Autorizo o tratamento dos meus dados para fins de análise nutricional conforme a <strong>LGPD (Lei 13.709/2018)</strong>.</span>
+    </label>
+
+    <button class="btn-consent" id="btnConsent" disabled onclick="acceptConsent()">
+      Aceitar e continuar
+    </button>
+    <div class="consent-date">Versão dos termos: Janeiro/2025 · CNPJ 44.038.190/0001-01</div>
+  </div>
+</div>
+
+<!-- ══════════ LEGAL PAGES ══════════ -->
+<div id="legalPage" class="hidden">
+  <div style="background:var(--navy2);border-bottom:1px solid rgba(201,151,58,0.2);padding:14px 20px;">
+    <a class="legal-back" onclick="hideLegal()">← Voltar</a>
+  </div>
+  <div class="legal-wrap" id="legalContent"></div>
+</div>
+
+<!-- ══════════ AUTH ══════════ -->
+<div id="authWrap" class="auth-wrap hidden">
+  <div class="auth-logo">
+    <svg class="auth-logo-img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="50" cy="62" rx="38" ry="10" fill="none" stroke="#C9973A" stroke-width="3"/>
+      <path d="M50 15 C30 15 18 30 20 48 C22 60 30 68 42 72 C46 73 50 74 50 74 C50 74 54 73 58 72 C70 68 78 60 80 48 C82 30 70 15 50 15Z" fill="#C9973A" opacity="0.9"/>
+      <circle cx="44" cy="38" r="3" fill="#0B1929"/><circle cx="38" cy="46" r="2" fill="#0B1929"/>
+      <circle cx="52" cy="44" r="2.5" fill="#0B1929"/><circle cx="46" cy="54" r="2" fill="#0B1929"/>
+      <circle cx="58" cy="38" r="2" fill="#0B1929"/>
+      <line x1="44" y1="38" x2="38" y2="46" stroke="#0B1929" stroke-width="1.2"/>
+      <line x1="44" y1="38" x2="52" y2="44" stroke="#0B1929" stroke-width="1.2"/>
+      <line x1="52" y1="44" x2="46" y2="54" stroke="#0B1929" stroke-width="1.2"/>
+      <line x1="52" y1="44" x2="58" y2="38" stroke="#0B1929" stroke-width="1.2"/>
+    </svg>
+    <h1>Essentia Scan™</h1>
+    <p>Instituto Neuro Essentia</p>
+  </div>
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="showAuthTab('login',event)">Entrar</button>
+      <button class="auth-tab" onclick="showAuthTab('register',event)">Criar conta</button>
+    </div>
+    <div id="alertAuth" class="alert hidden"></div>
+    <div id="loginForm">
+      <div class="form-group"><label>E-mail</label><input type="email" id="loginEmail" placeholder="seu@email.com" autocomplete="email"></div>
+      <div class="form-group"><label>Senha</label><input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password"></div>
+      <button class="btn-primary" onclick="doLogin()" id="btnLogin">Entrar</button>
+    </div>
+    <div id="registerForm" class="hidden">
+      <div class="form-group"><label>Nome completo</label><input type="text" id="regName" placeholder="Seu nome"></div>
+      <div class="form-group"><label>E-mail</label><input type="email" id="regEmail" placeholder="seu@email.com"></div>
+      <div class="form-group"><label>Senha (mín. 6 caracteres)</label><input type="password" id="regPassword" placeholder="••••••••"></div>
+      <button class="btn-primary" onclick="doRegister()" id="btnRegister">Criar conta grátis — 7 dias</button>
+    </div>
+    <div class="auth-footer">
+      <p>Ao continuar, você confirma que aceitou os termos de uso.</p>
+    </div>
+  </div>
+  <div style="margin-top:24px;text-align:center;font-size:0.75rem;color:var(--text2);">
+    Ainda não assinou? <a href="https://kiwify.app/FxzD5Sh" style="color:var(--gold2);">Assinar por R$29,70/mês →</a>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="appWrap" class="hidden">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <svg class="logo-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="50" cy="62" rx="38" ry="10" fill="none" stroke="#C9973A" stroke-width="3"/>
+        <path d="M50 15 C30 15 18 30 20 48 C22 60 30 68 42 72 C46 73 50 74 50 74 C50 74 54 73 58 72 C70 68 78 60 80 48 C82 30 70 15 50 15Z" fill="#C9973A" opacity="0.9"/>
+        <circle cx="44" cy="38" r="3" fill="#0B1929"/><circle cx="38" cy="46" r="2" fill="#0B1929"/>
+        <circle cx="52" cy="44" r="2.5" fill="#0B1929"/><circle cx="46" cy="54" r="2" fill="#0B1929"/>
+        <circle cx="58" cy="38" r="2" fill="#0B1929"/>
+        <line x1="44" y1="38" x2="38" y2="46" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="44" y1="38" x2="52" y2="44" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="52" y1="44" x2="46" y2="54" stroke="#0B1929" stroke-width="1.2"/>
+        <line x1="52" y1="44" x2="58" y2="38" stroke="#0B1929" stroke-width="1.2"/>
+      </svg>
+      <div class="topbar-title">Essentia Scan™<small>Instituto Neuro Essentia</small></div>
+    </div>
+    <div class="topbar-right">
+      <span id="trialBadge" class="trial-badge hidden"></span>
+      <button class="btn-logout" onclick="doLogout()">Sair</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="showTab('scan',event)"><span class="tab-icon">📷</span>Análise</div>
+    <div class="tab" onclick="showTab('today',event)"><span class="tab-icon">📊</span>Hoje</div>
+    <div class="tab" onclick="showTab('history',event)"><span class="tab-icon">📋</span>Histórico</div>
+    <div class="tab" onclick="showTab('profile',event)"><span class="tab-icon">👤</span>Perfil</div>
+    <div class="tab" onclick="showTab('clinica',event)"><span class="tab-icon">🏥</span>Clínica</div>
+  </div>
+
+  <!-- SCAN -->
+  <div id="scanScreen" class="screen active">
+    <div id="scanContent">
+      <div class="scan-hero">
+        <div class="scan-icon">🍽️</div>
+        <h2>Fotografe sua refeição</h2>
+        <p>A IA analisa calorias, proteínas, carboidratos e gorduras em segundos — com orientação médica especializada.</p>
+      </div>
+      <div class="upload-area" onclick="document.getElementById('photoInput').click()">
+        <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="handlePhoto(event)">
+        <img id="photoPreview" class="upload-preview hidden" alt="Preview">
+        <div id="uploadPlaceholder" class="upload-placeholder">
+          <span>📸</span>Toque para fotografar ou escolher da galeria
+        </div>
+      </div>
+      <div id="alertScan" class="alert hidden"></div>
+      <button id="btnAnalyze" class="btn-primary hidden" onclick="analyzePhoto()">Analisar refeição com IA</button>
+      <p style="font-size:0.72rem;color:var(--text2);text-align:center;margin-top:12px;">⚠️ As análises são estimativas. Não substituem orientação nutricional profissional.</p>
+    </div>
+    <div id="scanLoading" class="loading hidden">
+      <div class="spinner"></div>
+      <p>Analisando sua refeição...<br><small>Pode levar alguns segundos</small></p>
+    </div>
+    <div id="scanResult" class="hidden"></div>
+    <div id="subscribeWallScan" class="subscribe-wall hidden">
+      <h3>Período de teste encerrado</h3>
+      <p>Continue tendo acesso à análise nutricional com supervisão médica.</p>
+      <div class="price-tag">R$ 29,70<span style="font-size:1rem">/mês</span></div>
+      <div class="price-sub">Menos de R$1 por dia</div>
+      <a href="https://kiwify.app/FxzD5Sh" class="btn-subscribe">Assinar agora →</a>
+    </div>
+  </div>
+
+  <!-- TODAY -->
+  <div id="todayScreen" class="screen">
+    <div id="todayContent"><div class="loading"><div class="spinner"></div><p>Carregando...</p></div></div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="historyScreen" class="screen">
+    <div id="historyContent"><div class="loading"><div class="spinner"></div><p>Carregando...</p></div></div>
+  </div>
+
+  <!-- PROFILE -->
+  <div id="profileScreen" class="screen">
+    <h2 class="section-title">Meu Perfil Metabólico</h2>
+    <div id="alertProfile" class="alert hidden"></div>
+    <div id="cvScoreDisplay" class="hidden"></div>
+    <div id="metricsDisplay" class="hidden"></div>
+    <div class="result-card" style="margin-bottom:16px">
+      <h3 style="font-size:0.85rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:16px;">Dados pessoais</h3>
+      <div class="profile-grid">
+        <div class="form-group"><label>Peso (kg)</label><input type="number" id="profPeso" placeholder="70" min="30" max="300"></div>
+        <div class="form-group"><label>Altura (cm)</label><input type="number" id="profAltura" placeholder="170" min="100" max="250"></div>
+        <div class="form-group"><label>Idade</label><input type="number" id="profIdade" placeholder="35" min="10" max="120"></div>
+        <div class="form-group"><label>Sexo</label>
+          <select id="profSexo"><option value="">Selecione</option><option value="M">Masculino</option><option value="F">Feminino</option></select>
+        </div>
+        <div class="form-group full"><label>Circunferência abdominal (cm)</label><input type="number" id="profCA" placeholder="90" min="40" max="200"></div>
+      </div>
+    </div>
+    <div class="result-card" style="margin-bottom:16px">
+      <h3 style="font-size:0.85rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Condições de saúde</h3>
+      <p style="font-size:0.78rem;color:var(--text2);margin-bottom:14px;">Selecione as que se aplicam a você:</p>
+      <div class="conditions-grid">
+        <button class="condition-btn" data-cond="diabetes" onclick="toggleCondition(this)">🩸 Diabetes</button>
+        <button class="condition-btn" data-cond="hipertensao" onclick="toggleCondition(this)">❤️ Hipertensão</button>
+        <button class="condition-btn" data-cond="tabagismo" onclick="toggleCondition(this)">🚬 Tabagismo</button>
+        <button class="condition-btn" data-cond="dislipidemia" onclick="toggleCondition(this)">💊 Dislipidemia</button>
+        <button class="condition-btn" data-cond="obesidade" onclick="toggleCondition(this)">⚖️ Obesidade</button>
+        <button class="condition-btn" data-cond="sedentarismo" onclick="toggleCondition(this)">🛋️ Sedentarismo</button>
+        <button class="condition-btn" data-cond="historico_familiar" onclick="toggleCondition(this)">👨‍👩‍👧 Hist. familiar DCV</button>
+        <button class="condition-btn" data-cond="estresse_cronico" onclick="toggleCondition(this)">🧠 Estresse crônico</button>
+        <button class="condition-btn" data-cond="apneia" onclick="toggleCondition(this)">😴 Apneia do sono</button>
+        <button class="condition-btn" data-cond="doenca_renal" onclick="toggleCondition(this)">🫘 Doença renal</button>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="saveProfile()">Salvar perfil e calcular risco</button>
+    <div class="footer-brand" style="margin-top:24px;">
+      <p>Dr. Amilton Silva Jr. — CRM-SC 9118<br>Neurologia (RQE 6113) · Neurocirurgia (RQE 6114)</p>
+    </div>
+  </div>
+
+  <!-- CLINICA -->
+  <div id="clinicaScreen" class="screen">
+    <div class="doctor-card">
+      <div class="doctor-avatar">👨‍⚕️</div>
+      <div class="doctor-name">Dr. Amilton Silva Jr.</div>
+      <div class="doctor-crm">CRM-SC 9118 · Balneário Camboriú, SC</div>
+      <div>
+        <span class="doctor-specialty">Neurologia — RQE 6113</span>
+        <span class="doctor-specialty">Neurocirurgia — RQE 6114</span>
+      </div>
+    </div>
+    <p class="about-text">Com mais de 20 anos de experiência e mais de 5.000 cirurgias realizadas, o Dr. Amilton Silva Jr. é especialista em recuperação neurometabólica — a conexão entre nutrição, estilo de vida e funcionamento do sistema nervoso central.</p>
+    <p class="about-text">O Essentia Scan™ nasce dessa visão integrativa: cada refeição é uma mensagem para o seu cérebro. A análise nutricional por IA é personalizada com a perspectiva clínica de quem entende profundamente a relação entre o que você come e como seu SNC responde.</p>
+    <div class="info-block">
+      <h4>🧠 Recuperação neurometabólica</h4>
+      <p>A nutrição adequada é base para a saúde cerebral. Déficits de micronutrientes, inflamação crônica e disglicemia afetam diretamente memória, concentração, humor e qualidade do sono.</p>
+    </div>
+    <div class="info-block">
+      <h4>📍 Instituto Neuro Essentia</h4>
+      <p>
+        Neuro Essentia Centro de Saúde Integral Ltda<br>
+        CNPJ: 44.038.190/0001-01<br>
+        Av. Brasil, 180, Sala 03 — Bairro dos Pioneiros<br>
+        CEP 88.330-040 — Balneário Camboriú/SC<br><br>
+        <a href="tel:+5547992202080">📞 (47) 99220-2080</a><br>
+        <a href="https://wa.me/5547992202080">💬 WhatsApp: (47) 99220-2080</a><br>
+        <a href="https://www.instagram.com/dramiltonsilvajr">📱 @dramiltonsilvajr</a><br>
+        <a href="https://www.dramiltonsilvajr.com.br">🌐 dramiltonsilvajr.com.br</a><br>
+        <a href="mailto:dramiltonsilvajr@gmail.com">✉️ dramiltonsilvajr@gmail.com</a>
+      </p>
+    </div>
+    <div class="info-block">
+      <h4>⚠️ Aviso médico importante</h4>
+      <p>O Essentia Scan™ é uma ferramenta de apoio informativo e <strong>não substitui consulta médica, diagnóstico clínico ou acompanhamento nutricional presencial</strong>. As análises são estimativas geradas por inteligência artificial. Em caso de dúvidas sobre sua saúde, consulte sempre um profissional habilitado.</p>
+    </div>
+    <div class="info-block">
+      <h4>© Propriedade intelectual</h4>
+      <p>Essentia Scan™ é marca registrada de Neuro Essentia Centro de Saúde Integral Ltda (CNPJ 44.038.190/0001-01). Todo o conteúdo, algoritmos, interfaces, textos e metodologias são protegidos pela Lei de Direitos Autorais nº 9.610/98 e pelo Código de Propriedade Industrial. É expressamente proibida a reprodução, cópia, clonagem, engenharia reversa ou uso não autorizado, sob pena das sanções civis e penais cabíveis nos termos da legislação brasileira.</p>
+    </div>
+    <div class="info-block">
+      <h4>📄 Documentos legais</h4>
+      <p>
+        <a href="#" onclick="showLegal('termos');return false;">Termos de Uso</a> ·
+        <a href="#" onclick="showLegal('privacidade');return false;">Política de Privacidade (LGPD)</a>
+      </p>
+    </div>
+    <div class="footer-brand">
+      © 2025 Neuro Essentia Centro de Saúde Integral Ltda · CNPJ 44.038.190/0001-01<br>
+      Essentia Scan™ · Dr. Amilton Silva Jr. · CRM-SC 9118<br>
+      Todos os direitos reservados · Lei 9.610/98
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'https://essentia-backend-37g2.onrender.com';
+let token = localStorage.getItem('es_token');
+let userName = localStorage.getItem('es_name');
+let userProfile = null;
+let selectedConditions = [];
+
+// ── LEGAL TEXTS ───────────────────────────────────────────────
+const legalTexts = {
+  termos: `
+    <h1>Termos de Uso — Essentia Scan™</h1>
+    <p class="updated">Última atualização: Janeiro de 2025</p>
+    <h2>1. Identificação</h2>
+    <p>O aplicativo Essentia Scan™ é de propriedade e operado pela <strong>Neuro Essentia Centro de Saúde Integral Ltda</strong>, inscrita no CNPJ sob o nº <strong>44.038.190/0001-01</strong>, com sede na Av. Brasil, 180, Sala 03, Bairro dos Pioneiros, CEP 88.330-040, Balneário Camboriú/SC, sob a responsabilidade técnica do Dr. Amilton Silva Jr., CRM-SC 9118, Neurologia (RQE 6113) e Neurocirurgia (RQE 6114).</p>
+    <h2>2. Natureza do serviço</h2>
+    <p>O Essentia Scan™ é uma plataforma digital de apoio informativo que utiliza Inteligência Artificial para estimar o conteúdo calórico e de macronutrientes de refeições fotografadas, além de calcular indicadores educativos de risco cardiovascular. <strong>O serviço NÃO constitui consulta médica, diagnóstico clínico, prescrição dietética ou acompanhamento nutricional.</strong></p>
+    <h2>3. Limitações e responsabilidades</h2>
+    <ul>
+      <li>As análises nutricionais são estimativas com margem de erro de até 20%.</li>
+      <li>O score cardiovascular é um indicador educativo, não diagnóstico.</li>
+      <li>A empresa não se responsabiliza por decisões de saúde tomadas com base exclusiva nas informações do aplicativo.</li>
+      <li>O usuário assume total responsabilidade pelo uso das informações fornecidas.</li>
+      <li>Em situações de urgência ou emergência, o usuário deve buscar atendimento médico presencial imediatamente.</li>
+    </ul>
+    <h2>4. Propriedade intelectual</h2>
+    <p>Todo o conteúdo do Essentia Scan™ — incluindo marca, logo, algoritmos, interfaces, textos, metodologias e código-fonte — é protegido pela Lei de Direitos Autorais nº 9.610/98 e pela Lei de Propriedade Industrial nº 9.279/96. É expressamente proibida a reprodução, cópia, clonagem, engenharia reversa, redistribuição ou criação de obras derivadas sem autorização prévia e por escrito da Neuro Essentia Centro de Saúde Integral Ltda, sob pena das sanções previstas nos arts. 102 a 110 da Lei 9.610/98 e arts. 183 a 195 da Lei 9.279/96, além de indenização por danos materiais e morais.</p>
+    <h2>5. Assinatura e pagamento</h2>
+    <p>O acesso ao Essentia Scan™ é condicionado ao pagamento de assinatura mensal no valor de R$29,70 (vinte e nove reais e setenta centavos), processada pela plataforma Kiwify. O período de teste gratuito de 7 (sete) dias não gera cobrança. O cancelamento pode ser solicitado a qualquer momento, sem multa, com validade até o fim do período já pago.</p>
+    <h2>6. Privacidade de dados</h2>
+    <p>O tratamento de dados pessoais é realizado em conformidade com a Lei Geral de Proteção de Dados (LGPD — Lei 13.709/2018). Para detalhes, consulte nossa Política de Privacidade.</p>
+    <h2>7. Foro</h2>
+    <p>Fica eleito o foro da comarca de Balneário Camboriú/SC para dirimir quaisquer controvérsias decorrentes destes Termos, com renúncia a qualquer outro, por mais privilegiado que seja.</p>
+    <h2>8. Contato</h2>
+    <p>Para dúvidas, sugestões ou exercício de direitos:<br>
+    📞 (47) 99220-2080<br>
+    💬 WhatsApp: wa.me/5547992202080<br>
+    ✉️ dramiltonsilvajr@gmail.com<br>
+    📍 Av. Brasil, 180, Sala 03 — Balneário Camboriú/SC</p>
+  `,
+  privacidade: `
+    <h1>Política de Privacidade — Essentia Scan™</h1>
+    <p class="updated">Última atualização: Janeiro de 2025 · Em conformidade com a LGPD (Lei 13.709/2018)</p>
+    <h2>1. Controlador de dados</h2>
+    <p><strong>Neuro Essentia Centro de Saúde Integral Ltda</strong><br>CNPJ: 44.038.190/0001-01<br>Av. Brasil, 180, Sala 03 — Balneário Camboriú/SC<br>E-mail: dramiltonsilvajr@gmail.com<br>WhatsApp: (47) 99220-2080</p>
+    <h2>2. Dados coletados</h2>
+    <ul>
+      <li><strong>Dados cadastrais:</strong> nome completo e e-mail para criação de conta.</li>
+      <li><strong>Dados de saúde:</strong> peso, altura, idade, sexo, circunferência abdominal e condições de saúde informadas voluntariamente.</li>
+      <li><strong>Imagens de refeições:</strong> fotografias enviadas para análise nutricional.</li>
+      <li><strong>Histórico de uso:</strong> registros de refeições analisadas e dados nutricionais.</li>
+    </ul>
+    <h2>3. Finalidade do tratamento</h2>
+    <ul>
+      <li>Prestação do serviço de análise nutricional por IA.</li>
+      <li>Cálculo de indicadores metabólicos e de risco cardiovascular.</li>
+      <li>Manutenção do histórico alimentar do usuário.</li>
+      <li>Cumprimento de obrigações legais e contratuais.</li>
+    </ul>
+    <h2>4. Base legal</h2>
+    <p>O tratamento de dados é fundamentado no <strong>consentimento do titular</strong> (art. 7º, I, LGPD), coletado expressamente no momento do primeiro acesso, e na execução do contrato de prestação de serviço (art. 7º, V, LGPD).</p>
+    <h2>5. Compartilhamento de dados</h2>
+    <p>As imagens e dados nutricionais são processados pela API da Anthropic (Claude AI) exclusivamente para fins de análise. Os dados não são vendidos, comercializados ou compartilhados com terceiros para fins de marketing. O histórico alimentar fica armazenado em servidores seguros e não é acessado por terceiros sem autorização do titular.</p>
+    <h2>6. Segurança</h2>
+    <p>Adotamos medidas técnicas e organizacionais adequadas para proteger os dados pessoais contra acessos não autorizados, incluindo criptografia de senhas (bcrypt), autenticação por token JWT e comunicação via HTTPS.</p>
+    <h2>7. Direitos do titular</h2>
+    <p>Nos termos da LGPD, você tem direito a: confirmar a existência de tratamento; acessar seus dados; corrigir dados incompletos ou incorretos; solicitar a exclusão de dados desnecessários; revogar o consentimento a qualquer momento. Para exercer esses direitos, entre em contato via dramiltonsilvajr@gmail.com ou WhatsApp (47) 99220-2080.</p>
+    <h2>8. Retenção de dados</h2>
+    <p>Os dados são mantidos enquanto a conta estiver ativa. Após o cancelamento da assinatura, os dados são excluídos em até 90 (noventa) dias, salvo obrigação legal de retenção.</p>
+    <h2>9. Imagens de refeições</h2>
+    <p>As imagens enviadas para análise são processadas em tempo real e <strong>não são armazenadas permanentemente</strong> em nossos servidores. São utilizadas exclusivamente para gerar a análise nutricional solicitada.</p>
+    <h2>10. Contato do Encarregado (DPO)</h2>
+    <p>Dr. Amilton Silva Jr.<br>✉️ dramiltonsilvajr@gmail.com<br>📞 (47) 99220-2080</p>
+  `
+};
+
+// ── LEGAL ─────────────────────────────────────────────────────
+function showLegal(type) {
+  document.getElementById('legalContent').innerHTML = legalTexts[type];
+  document.getElementById('legalPage').classList.remove('hidden');
+  document.getElementById('consentOverlay').classList.add('hidden');
+  window.scrollTo(0,0);
+}
+function hideLegal() {
+  document.getElementById('legalPage').classList.add('hidden');
+  if (!localStorage.getItem('es_consent')) {
+    document.getElementById('consentOverlay').classList.remove('hidden');
+  }
+}
+
+// ── CONSENT ───────────────────────────────────────────────────
+function checkConsent() {
+  const c1 = document.getElementById('check1').checked;
+  const c2 = document.getElementById('check2').checked;
+  const c3 = document.getElementById('check3').checked;
+  document.getElementById('btnConsent').disabled = !(c1 && c2 && c3);
+}
+function acceptConsent() {
+  localStorage.setItem('es_consent', new Date().toISOString());
+  document.getElementById('consentOverlay').classList.add('hidden');
+  startApp();
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.onload = async () => {
+  const consent = localStorage.getItem('es_consent');
+  if (!consent) {
+    document.getElementById('consentOverlay').classList.remove('hidden');
+    return;
+  }
+  startApp();
+};
+
+async function startApp() {
+  if (token) {
+    try {
+      const r = await fetch(`${API}/api/auth/status`, { headers: { Authorization: `Bearer ${token}` } });
+      if (r.ok) {
+        const d = await r.json();
+        userName = d.name; userProfile = d.profile;
+        showApp(d.subscription);
+        if (d.profile) loadProfileData(d.profile);
+        return;
+      }
+    } catch(e) {}
+    localStorage.removeItem('es_token');
+    localStorage.removeItem('es_name');
+    token = null;
+  }
+  document.getElementById('authWrap').classList.remove('hidden');
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function showAuthTab(tab, e) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  e.target.classList.add('active');
+  document.getElementById('loginForm').classList.toggle('hidden', tab !== 'login');
+  document.getElementById('registerForm').classList.toggle('hidden', tab !== 'register');
+  clearAlert('alertAuth');
+}
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) return showAlert('alertAuth', 'Preencha e-mail e senha.', 'error');
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const r = await fetch(`${API}/api/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({email,password}) });
+    const d = await r.json();
+    if (!r.ok) { showAlert('alertAuth', d.error, 'error'); return; }
+    token = d.token; userName = d.name;
+    localStorage.setItem('es_token', token); localStorage.setItem('es_name', userName);
+    userProfile = d.profile;
+    showApp(d.subscription);
+    if (d.profile) loadProfileData(d.profile);
+  } catch(e) { showAlert('alertAuth', 'Erro de conexão. Tente novamente.', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const password = document.getElementById('regPassword').value;
+  if (!name||!email||!password) return showAlert('alertAuth','Preencha todos os campos.','error');
+  const btn = document.getElementById('btnRegister');
+  btn.disabled = true; btn.textContent = 'Criando conta...';
+  try {
+    const r = await fetch(`${API}/api/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name,email,password}) });
+    const d = await r.json();
+    if (!r.ok) { showAlert('alertAuth', d.error, 'error'); return; }
+    token = d.token; userName = d.name;
+    localStorage.setItem('es_token', token); localStorage.setItem('es_name', userName);
+    showApp({ status:'trial' });
+  } catch(e) { showAlert('alertAuth','Erro de conexão. Tente novamente.','error'); }
+  finally { btn.disabled = false; btn.textContent = 'Criar conta grátis — 7 dias'; }
+}
+function doLogout() {
+  localStorage.removeItem('es_token'); localStorage.removeItem('es_name');
+  token = null; userName = null; userProfile = null;
+  document.getElementById('appWrap').classList.add('hidden');
+  document.getElementById('authWrap').classList.remove('hidden');
+}
+
+// ── APP ───────────────────────────────────────────────────────
+function showApp(sub) {
+  document.getElementById('authWrap').classList.add('hidden');
+  document.getElementById('appWrap').classList.remove('hidden');
+  if (sub && sub.status === 'trial' && sub.ends) {
+    const days = Math.ceil((new Date(sub.ends) - new Date()) / 86400000);
+    if (days > 0) {
+      const badge = document.getElementById('trialBadge');
+      badge.textContent = `🎁 ${days} dia${days>1?'s':''} grátis`;
+      badge.classList.remove('hidden');
+    }
+  }
+}
+
+// ── TABS ──────────────────────────────────────────────────────
+function showTab(tab, e) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  e.currentTarget.classList.add('active');
+  document.getElementById(tab+'Screen').classList.add('active');
+  if (tab==='today') loadToday();
+  if (tab==='history') loadHistory();
+}
+
+// ── SCAN ──────────────────────────────────────────────────────
+let photoData = null, photoMime = null;
+function handlePhoto(e) {
+  const file = e.target.files[0]; if (!file) return;
+  photoMime = file.type;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    photoData = ev.target.result.split(',')[1];
+    document.getElementById('photoPreview').src = ev.target.result;
+    document.getElementById('photoPreview').classList.remove('hidden');
+    document.getElementById('uploadPlaceholder').classList.add('hidden');
+    document.getElementById('btnAnalyze').classList.remove('hidden');
+    document.getElementById('scanResult').classList.add('hidden');
+    document.getElementById('scanResult').innerHTML = '';
+    clearAlert('alertScan');
+  };
+  reader.readAsDataURL(file);
+}
+async function analyzePhoto() {
+  if (!photoData) return;
+  document.getElementById('scanContent').classList.add('hidden');
+  document.getElementById('scanLoading').classList.remove('hidden');
+  document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('subscribeWallScan').classList.add('hidden');
+  try {
+    const r = await fetch(`${API}/api/analyze`, { method:'POST', headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`}, body:JSON.stringify({image:photoData,mimeType:photoMime}) });
+    const d = await r.json();
+    document.getElementById('scanLoading').classList.add('hidden');
+    document.getElementById('scanContent').classList.remove('hidden');
+    if (r.status===403 && d.requiresSubscription) { document.getElementById('subscribeWallScan').classList.remove('hidden'); return; }
+    if (!r.ok) { showAlert('alertScan', d.error||'Erro ao analisar. Tente novamente.','error'); return; }
+    let todayTotals = null;
+    try { const tr = await fetch(`${API}/api/history/today`,{headers:{Authorization:`Bearer ${token}`}}); if(tr.ok){const td=await tr.json();todayTotals=td.totais;} } catch(e){}
+    const metaCal = userProfile?.meta_calorica || 2000;
+    const pctCal = todayTotals ? Math.min(Math.round((todayTotals.calorias/metaCal)*100),100) : null;
+    document.getElementById('scanResult').innerHTML = `
+      <div class="result-card">
+        <div class="result-dish">${d.prato}</div>
+        <div class="result-portion">${d.porcao_estimada} · IG: ${d.indice_glicemico}</div>
+        <span class="quality-badge quality-${d.qualidade}">Refeição ${d.qualidade}</span>
+        <div class="macros-grid">
+          <div class="macro-item" style="grid-column:1/-1">
+            <div class="macro-value calories">${d.calorias} kcal</div>
+            <div class="macro-label">Calorias totais</div>
+            <div class="macro-range">${d.calorias_min}–${d.calorias_max} kcal estimado</div>
+          </div>
+          <div class="macro-item"><div class="macro-value">${d.proteina_g}g</div><div class="macro-label">Proteína</div></div>
+          <div class="macro-item"><div class="macro-value">${d.carboidrato_g}g</div><div class="macro-label">Carboidratos</div></div>
+          <div class="macro-item"><div class="macro-value">${d.gordura_g}g</div><div class="macro-label">Gordura</div></div>
+          <div class="macro-item"><div class="macro-value">${d.fibra_g}g</div><div class="macro-label">Fibra</div></div>
+        </div>
+        <div class="result-summary">📋 ${d.resumo}</div>
+        <div class="result-neuro"><strong>🧠 Impacto no SNC:</strong> ${d.dica_neuro}</div>
+        ${todayTotals?`<div class="alert alert-info" style="margin-top:12px">Hoje: <strong>${todayTotals.calorias} kcal</strong> de ${metaCal} kcal (${pctCal}% da meta).</div>`:''}
+        <div class="disclaimer-mini">⚠️ Valores estimados por IA. Não substituem orientação nutricional profissional.</div>
+      </div>
+      <button class="btn-secondary" onclick="resetScan()" style="margin-bottom:20px">📷 Analisar outra refeição</button>`;
+    document.getElementById('scanResult').classList.remove('hidden');
+  } catch(e) {
+    document.getElementById('scanLoading').classList.add('hidden');
+    document.getElementById('scanContent').classList.remove('hidden');
+    showAlert('alertScan','Erro de conexão. Verifique sua internet.','error');
+  }
+}
+function resetScan() {
+  document.getElementById('photoPreview').classList.add('hidden');
+  document.getElementById('photoPreview').src='';
+  document.getElementById('uploadPlaceholder').classList.remove('hidden');
+  document.getElementById('btnAnalyze').classList.add('hidden');
+  document.getElementById('scanResult').classList.add('hidden');
+  document.getElementById('scanResult').innerHTML='';
+  document.getElementById('photoInput').value='';
+  photoData=null; photoMime=null;
+}
+
+// ── TODAY ──────────────────────────────────────────────────────
+async function loadToday() {
+  const cont = document.getElementById('todayContent');
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando...</p></div>';
+  try {
+    const r = await fetch(`${API}/api/history/today`,{headers:{Authorization:`Bearer ${token}`}});
+    if (r.status===403) { cont.innerHTML=`<div class="subscribe-wall"><h3>Acesso restrito</h3><p>Assine para ver seu histórico diário.</p><a href="https://kiwify.app/FxzD5Sh" class="btn-subscribe">Assinar agora →</a></div>`; return; }
+    const d = await r.json(); const t = d.totais;
+    const meta = userProfile || {meta_calorica:2000,meta_proteina:120,meta_carboidrato:250,meta_gordura:65};
+    const pct = (v,m) => Math.min(Math.round((v/m)*100),100);
+    cont.innerHTML = `
+      <h2 class="section-title">Consumo de hoje</h2>
+      <div class="today-card">
+        <div class="today-title">Progresso do dia</div>
+        <div class="progress-row"><span class="progress-label">Calorias</span><div class="progress-bar-wrap"><div class="progress-bar cal" style="width:${pct(t.calorias,meta.meta_calorica)}%"></div></div><span class="progress-val">${t.calorias}/${meta.meta_calorica}</span></div>
+        <div class="progress-row"><span class="progress-label">Proteína</span><div class="progress-bar-wrap"><div class="progress-bar prot" style="width:${pct(t.proteina_g,meta.meta_proteina)}%"></div></div><span class="progress-val">${t.proteina_g}/${meta.meta_proteina}g</span></div>
+        <div class="progress-row"><span class="progress-label">Carboidratos</span><div class="progress-bar-wrap"><div class="progress-bar carb" style="width:${pct(t.carboidrato_g,meta.meta_carboidrato)}%"></div></div><span class="progress-val">${t.carboidrato_g}/${meta.meta_carboidrato}g</span></div>
+        <div class="progress-row"><span class="progress-label">Gordura</span><div class="progress-bar-wrap"><div class="progress-bar fat" style="width:${pct(t.gordura_g,meta.meta_gordura)}%"></div></div><span class="progress-val">${t.gordura_g}/${meta.meta_gordura}g</span></div>
+      </div>
+      ${d.history.length===0?'<div class="alert alert-info">Nenhuma refeição registrada hoje. Fotografe sua próxima refeição!</div>':''}
+      <h3 style="font-size:0.8rem;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:12px;">Refeições de hoje</h3>
+      ${d.history.map(h=>`<div class="history-item"><div class="history-emoji">🍽️</div><div class="history-info"><div class="history-name">${h.prato}</div><div class="history-meta">${formatTime(h.date)} · P:${h.proteina_g}g C:${h.carboidrato_g}g G:${h.gordura_g}g</div></div><div class="history-cals">${h.calorias} kcal</div></div>`).join('')}
+    `;
+  } catch(e) { cont.innerHTML='<div class="alert alert-error">Erro ao carregar. Verifique sua conexão.</div>'; }
+}
+
+// ── HISTORY ───────────────────────────────────────────────────
+async function loadHistory() {
+  const cont = document.getElementById('historyContent');
+  cont.innerHTML = '<div class="loading"><div class="spinner"></div><p>Carregando...</p></div>';
+  try {
+    const r = await fetch(`${API}/api/history`,{headers:{Authorization:`Bearer ${token}`}});
+    if (r.status===403) { cont.innerHTML=`<div class="subscribe-wall"><h3>Acesso restrito</h3><p>Assine para ver seu histórico.</p><a href="https://kiwify.app/FxzD5Sh" class="btn-subscribe">Assinar agora →</a></div>`; return; }
+    const d = await r.json();
+    if (d.history.length===0) { cont.innerHTML='<div class="alert alert-info">Nenhuma refeição registrada ainda.</div>'; return; }
+    const byDay = {};
+    d.history.forEach(h=>{const day=h.date.split('T')[0];if(!byDay[day])byDay[day]=[];byDay[day].push(h);});
+    cont.innerHTML = `<h2 class="section-title">Histórico alimentar</h2>${Object.entries(byDay).slice(0,30).map(([day,items])=>{
+      const total=items.reduce((s,h)=>s+h.calorias,0);
+      return `<div style="margin-bottom:6px;"><div style="font-size:0.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding:0 4px;">${formatDay(day)} · ${total} kcal total</div>${items.map(h=>`<div class="history-item"><div class="history-emoji">🍽️</div><div class="history-info"><div class="history-name">${h.prato}</div><div class="history-meta">${formatTime(h.date)}</div></div><div class="history-cals">${h.calorias} kcal</div></div>`).join('')}</div><div class="divider"></div>`;
+    }).join('')}`;
+  } catch(e) { cont.innerHTML='<div class="alert alert-error">Erro ao carregar histórico.</div>'; }
+}
+
+// ── PROFILE ───────────────────────────────────────────────────
+function toggleCondition(btn) {
+  const cond = btn.dataset.cond;
+  btn.classList.toggle('selected');
+  if (selectedConditions.includes(cond)) selectedConditions=selectedConditions.filter(c=>c!==cond);
+  else selectedConditions.push(cond);
+}
+async function saveProfile() {
+  const peso=parseFloat(document.getElementById('profPeso').value);
+  const altura=parseFloat(document.getElementById('profAltura').value);
+  const idade=parseInt(document.getElementById('profIdade').value);
+  const sexo=document.getElementById('profSexo').value;
+  const ca=parseFloat(document.getElementById('profCA').value)||0;
+  if (!peso||!altura||!idade||!sexo) return showAlert('alertProfile','Preencha peso, altura, idade e sexo.','error');
+  const btn = event.target; btn.disabled=true; btn.textContent='Salvando...';
+  try {
+    const r = await fetch(`${API}/api/profile`,{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${token}`},body:JSON.stringify({peso,altura,idade,sexo,circunferencia_abdominal:ca,condicoes:selectedConditions})});
+    const d = await r.json();
+    if (!r.ok) { showAlert('alertProfile',d.error,'error'); return; }
+    userProfile=d.profile; loadProfileData(d.profile);
+    showAlert('alertProfile','✅ Perfil salvo com sucesso!','success');
+  } catch(e) { showAlert('alertProfile','Erro ao salvar. Verifique sua conexão.','error'); }
+  finally { btn.disabled=false; btn.textContent='Salvar perfil e calcular risco'; }
+}
+function loadProfileData(p) {
+  document.getElementById('profPeso').value=p.peso;
+  document.getElementById('profAltura').value=p.altura;
+  document.getElementById('profIdade').value=p.idade;
+  document.getElementById('profSexo').value=p.sexo;
+  document.getElementById('profCA').value=p.circunferencia_abdominal||'';
+  selectedConditions=p.condicoes||[];
+  document.querySelectorAll('.condition-btn').forEach(btn=>btn.classList.toggle('selected',selectedConditions.includes(btn.dataset.cond)));
+  document.getElementById('cvScoreDisplay').innerHTML=`
+    <div class="cv-score-card">
+      <div class="cv-score-number" style="color:${p.risco_cv_cor}">${p.score_cv}</div>
+      <div class="cv-score-label">Score de risco cardiovascular</div>
+      <span class="cv-risk-badge" style="background:${p.risco_cv_cor}22;color:${p.risco_cv_cor};border:1px solid ${p.risco_cv_cor}44">Risco ${p.risco_cv}</span>
+      <div style="font-size:0.75rem;color:var(--text2);margin-top:8px;">Baseado em ${p.condicoes?.length||0} fator(es) de risco · Indicador educativo, não diagnóstico.</div>
+    </div>`;
+  document.getElementById('cvScoreDisplay').classList.remove('hidden');
+  document.getElementById('metricsDisplay').innerHTML=`
+    <h3 class="section-title">Suas metas diárias</h3>
+    <div class="metrics-grid">
+      <div class="metric-card"><div class="metric-value">${p.tmb}</div><div class="metric-label">Taxa basal (kcal)</div><div class="metric-sub">Em repouso total</div></div>
+      <div class="metric-card"><div class="metric-value">${p.meta_calorica}</div><div class="metric-label">Meta calórica</div><div class="metric-sub">Atividade moderada</div></div>
+      <div class="metric-card"><div class="metric-value">${p.meta_proteina}g</div><div class="metric-label">Proteína</div><div class="metric-sub">1,8g/kg peso</div></div>
+      <div class="metric-card"><div class="metric-value">${p.meta_carboidrato}g</div><div class="metric-label">Carboidratos</div><div class="metric-sub">45% das calorias</div></div>
+    </div>`;
+  document.getElementById('metricsDisplay').classList.remove('hidden');
+}
+
+// ── UTILS ──────────────────────────────────────────────────────
+function showAlert(id,msg,type){const el=document.getElementById(id);el.className=`alert alert-${type}`;el.textContent=msg;el.classList.remove('hidden');}
+function clearAlert(id){const el=document.getElementById(id);el.classList.add('hidden');el.textContent='';}
+function formatTime(iso){return new Date(iso).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function formatDay(dateStr){const d=new Date(dateStr+'T12:00:00');const today=new Date().toISOString().split('T')[0];const yesterday=new Date(Date.now()-86400000).toISOString().split('T')[0];if(dateStr===today)return'Hoje';if(dateStr===yesterday)return'Ontem';return d.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});}
+</script>
+</body>
+</html>
